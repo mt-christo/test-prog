@@ -1,0 +1,71 @@
+// Cooley-Tukey 1D FFT, O(n*log n);
+// takes the array to be transformed as argument
+fft:{:[1<#x;{{{+(+x+y),+x-y}[x;(-/y*z;+/y*1!z)]}[fft x[y];fft x[y+1];{(_cos x;_sin x)}z*y]}[x;&~(!#x)!2; -3.1415926%#x];(x;0)]}
+
+
+// Numeric time series taken from i'th column of a text file formatted with given delimiter; 
+// takes [filename;i;delimiter] as arguments
+ts:{1.0${{x[&~x=y]}[x[&y=+\x=z];z]}[;y;z]'(0:x)}
+
+
+// Discretized distribution of values in a given array;
+// takes [array;discretization step] as arguments
+DD:{{(#&x=)'!1+|/x}@_(x-&/x)%y}
+
+
+// Covariance matrix for given list of time series;
+// takes the list of studied time series (list of vectors of equal length) as argument
+COV:{{({+/'x[y]*/:x}[{x-+/x%y}[;y]'x;]'!#x)%y}[x;#x[0]]}
+
+
+// All combinations of elements from given lists, i.e. a list of length (#L1)*(#L2)*..*(#LN) containing any 
+// combination of elements, one from each of Lk.
+// takes list of these lists 
+comb:{{,/x,'/:y}/x}
+
+
+// Successive sort of a list of lists by their elements standing at given indexes 
+// takes [x;y] - [list (of lists) to be sorted; sequence of indexes] 
+srt:{s:x; s@{<s@\:x}/y}
+
+
+// Yield to maturity (YTM) of a cashflow; 
+// takes its payments vector (x), payment periods vector (y) and the present value (z) as arguments 
+ytm:{{[t]+/x%(1+t)^+\y}?z} 
+// and having this, it is obvious to calculate the Macaulay duration of a cashflow (same parameters):
+MD:{+/(x%(1+ytm[x;y;z])^+\y)*+\y%z}
+
+
+// Approximate datediff[date1;date2] value; 
+// takes [date1;date2] in "yyyymmdd" string format.
+dd:{:[(8=#x)&8=#y;{+/(x[1]-x[0])*(365;30.5;1)}@{0$x@(!4;4 5;6 7)}'(x;y);0]}
+
+
+// Changes in positions (for each instrument) and turnover (sum of signed deal volumes plus commissions) in 
+// each instrument on each deal date; 
+// takes [deals(list)], each deal in format (instrument;amount(signed);price;commission;date(integer yyyymmdd)). 
+n:{{[i;a;p;c;d]((*d;*i);+/a;+/(a*p)+c)}.'+:'a@=a@\:4 0}
+
+
+// Instrument-detailed position, total turnover (see above) aggregated up to the date and average value of transactions 
+// balance (i.e. average amount of money under management for the period passed from the first transaction date) on 
+// each of given dates. Such set of values, looking strange at first, is needed for calculation of asset management profitability, 
+// that can be defined as depending on marked-to-market asset position, operations PnL and average amount of money 
+// entrusted to the asset manager;
+// takes [deals;dates;cash transactions], each transaction in format (amount;date(integer yyyymmdd)).
+pt:{h:n@x;y,'{[q;v]t:+h[&v>*:'*:'h];:[0<#t;{k:v;u:(+x)1;((?u),'+/'y@=u;+/'(z;{(x%dd[$&/y;$k]%dd[;$k]'$y)@&(y<k)&~y<&/y}.+q))}. t;]}[z;]'y}
+
+
+// Profitability (explained below) on each of dates from the date of the first deal, for dates for which valid instrument price 
+// history is provided; here, profitability is defined as marked-to-market asset position plus PnL given by all (it is important) 
+// trade operations minus all commissions all divided by average amount of money entrusted during the whole management 
+// period. 
+// Such formula can be figured out from the following simple argument: to calculate the percentage at which we 
+// performed in our asset management fluctuations (or just random manipulations:)) we may want to take the 
+// MTM-position we have at the moment, add the cash we have, subtract the amount we were entrusted (given) and 
+// divide this sum by the average amount of money we've been entrusted during the whole investment period (consider 
+// case of multiple cash injections). After simple arithmetic operations, such expression can be reduced to what is stated 
+// in the beginning, and is returned here for each valid date (i.e. for which market prices are known, and all the values 
+// defined above can be calculated) to let trace the performance history; 
+// takes [deals;price history;cash transactions], price history consisting of elements in format (date(integer yyyymmdd);instrument;price) 
+pr:{p:pt[x;?(+y)0;z];{[q;v;s]:[3=#q;{x,'(-z[0]-+/((+(s,0)[v?/:x,'(+y)0])2)*(+y)1)%z@1}. q]}[;y@\:0 1;y]'p[&2<#:'p]} 
