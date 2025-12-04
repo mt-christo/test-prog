@@ -25,14 +25,32 @@
   :custom
   ; See the Configuration section below
   (aidermacs-use-architect-mode t)
-  (aidermacs-default-model "sonnet"))
+  (aidermacs-default-model "sonnet")
+  (aidermacs-architect-model "anthropic/claude-opus-4-5-20251101")
+  (aidermacs-editor-model "anthropic/claude-sonnet-4-5-20250929"))
 
-; Python lsp
-(use-package python
-  :ensure nil
-  :hook (python-mode . lsp))
+(use-package company
+  :ensure t
+  :hook (after-init . global-company-mode))
 
-; R lsp
+(use-package company-box
+  :hook (company-mode . company-box-mode))
+
+(use-package lsp-mode
+  :hook ((python-mode . lsp)
+         (ess-r-mode . lsp))
+  :commands lsp
+  :config
+  (setq lsp-keymap-prefix "C-c l"))  ;; optional keymap prefix
+
+(use-package lsp-ui
+  :commands lsp-ui-mode)
+
+(use-package company
+  :hook (after-init . global-company-mode))
+
+
+(add-hook 'python-mode-hook #'lsp)
 (add-hook 'ess-r-mode-hook #'lsp)
 
 (elpy-enable)
