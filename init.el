@@ -38,25 +38,36 @@
 
 (use-package lsp-mode
   :hook ((python-mode . lsp)
-         (ess-r-mode . lsp))
+         (lsp-mode . (lambda ()
+                       ;; Disable flymake completely
+                       (when (bound-and-true-p flymake-mode)
+                         (flymake-mode -1)))))
   :commands lsp
   :config
-  (setq lsp-keymap-prefix "C-c l"))  ;; optional keymap prefix
+  (setq lsp-keymap-prefix "C-c l"
+        ;; Optional: tell LSP to not use flymake at all
+        lsp-diagnostics-provider :none))
 
 (use-package lsp-ui
   :commands lsp-ui-mode)
 
-(use-package company
-  :hook (after-init . global-company-mode))
-
+(setq global-flymake-mode -1)
 
 (add-hook 'python-mode-hook #'lsp)
-(add-hook 'ess-r-mode-hook #'lsp)
 
-(elpy-enable)
+;;(elpy-enable)
 ;;(set-default 'truncate-lines t)
+(defun my/neotree-toggle ()
+  (interactive)
+  (if (neo-global--window-exists-p)
+      (neotree-hide)
+    (neotree-find)))
+
+(global-set-key (kbd "C-w") #'my/neotree-toggle)
+
 (define-key input-decode-map "\e[4~" 'end-of-line)
-(global-set-key (kbd "C-w")  'treemacs)
+(global-set-key (kbd "C-f")  'avy-goto-char-timer)
+(global-set-key (kbd "C-c C-d")  'avy-goto-line)
 (global-set-key (kbd "M-o m")  (kbd "RET"))
 (global-set-key (kbd "<f5>")  'python-shell-send-region)
 (global-set-key (kbd "C-q")  'ess-eval-region-or-line-and-step)
